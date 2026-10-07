@@ -4,10 +4,13 @@ const $ = s => document.querySelector(s), app = $('#app');
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const IC = { home: '<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>', users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.8a3.5 3.5 0 010 6.4M18 14.8c2 .6 3.3 2.3 3.6 5"/>',
   fu: '<rect x="4" y="4" width="16" height="17" rx="3"/><path d="M9 2v4M15 2v4M8 13h8M8 17h5"/>', ref: '<path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/>',
-  out: '<path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 16l-4-4 4-4M6 12h10"/>', re: '<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>' };
+  out: '<path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 16l-4-4 4-4M6 12h10"/>', re: '<path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', gear: '<path d="M17 20v-1a4 4 0 00-4-4h-2a4 4 0 00-4 4v1"/><circle cx="12" cy="8" r="3.5"/>' };
 const svg = n => `<svg class="i" viewBox="0 0 24 24">${IC[n]}</svg>`;
 const S = { tab: 'home', data: null, at: 0, q: '', f: 'all', n: 40 };
-const TABS = [['home', 'หน้าแรก'], ['people', 'รายชื่อ'], ['fu', 'ติดตาม'], ['ref', 'ส่งต่อ']];
+const TABS = [['home', 'หน้าแรก', 'home'], ['people', 'รายชื่อ', 'users'], ['fu', 'ติดตาม', 'fu'], ['ref', 'ส่งต่อ', 'ref']];
+const ATABS = [['ov', 'ภาพรวม', 'home'], ['rp', 'รายงาน', 'chart'], ['us', 'ผู้ใช้งาน', 'gear']];
+const tabsOf = () => ((NCD_API.user() || {}).role === 'ADMIN' ? ATABS : TABS);
 
 let tt; function toast(m, bad) { const t = $('#toast'); t.textContent = m; t.className = 'show' + (bad ? ' bad' : ''); clearTimeout(tt); tt = setTimeout(() => t.className = '', 3200); }
 const thDate = v => { const d = new Date(v); return isNaN(d) ? '-' : d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }); };
@@ -46,14 +49,16 @@ function showLogin(msg, admin) {
 
 /* ---------- Shell ---------- */
 function showShell() {
-  const u = NCD_API.user() || {}, admin = u.role === 'ADMIN';
+  const u = NCD_API.user() || {}, admin = u.role === 'ADMIN', tabs = admin ? ATABS : TABS;
   document.body.classList.add('in');
-  app.innerHTML = `<header class="top"><img src="assets/logo-96.png" alt=""><div class="t"><b>NCD Care</b><small id="sb">${esc(u.displayName || '')}</small></div>
+  app.innerHTML = `<header class="top"><img src="assets/logo-96.png" alt=""><div class="t"><b><span class="m">NCD Care</span><span class="d" id="ttl"></span></b><small id="sb">${esc(u.displayName || '')}</small></div>
     ${admin ? '' : `<button class="ib" id="rf" aria-label="รีเฟรช">${svg('re')}</button>`}<button class="ib" id="lo" aria-label="ออกจากระบบ">${svg('out')}</button></header>
     <main><div id="view" class="view"></div></main>
-    ${admin ? '' : `<nav class="tabs" id="tb">${TABS.map(([k, l]) => `<a href="#/${k}" data-k="${k}">${svg({ home: 'home', people: 'users', fu: 'fu', ref: 'ref' }[k])}${l}</a>`).join('')}</nav>`}`;
-  $('#lo').onclick = logout;
-  if (admin) { $('#view').innerHTML = `<div class="card"><h3 style="margin:0 0 6px">สวัสดี ${esc(u.displayName || 'ผู้ดูแลระบบ')}</h3><p class="sub" style="margin:0">หน้า Dashboard ผู้ดูแลระบบอยู่ใน Phase 4 ระหว่างนี้ใช้ระบบเดิมสำหรับงาน Admin ไปก่อน</p></div>`; return; }
+    <nav class="tabs" id="tb" style="--cnt:${tabs.length}"><div class="brand"><img src="assets/logo-96.png" alt=""><div><b>NCD Care</b><small>โรงพยาบาลศรีสาคร</small></div></div>
+      <div class="items">${tabs.map(([k, l, ic]) => `<a href="#/${k}" data-k="${k}">${svg(ic)}${l}</a>`).join('')}</div>
+      <div class="usr"><div class="av2">${esc(initial(u.displayName || ''))}</div><div class="nm"><b>${esc(u.displayName || '')}</b><small>${admin ? 'ผู้ดูแลระบบ' : 'อสม.'}</small></div><button class="ib" id="lo2" aria-label="ออกจากระบบ">${svg('out')}</button></div></nav>`;
+  $('#lo').onclick = logout; $('#lo2').onclick = logout;
+  if (admin) { $('#sb').textContent = 'ผู้ดูแลระบบ'; route(true); return; }
   $('#rf').onclick = () => load(true);
   const c = NCD_API.cacheGet(); if (c && c.d && c.d.user && c.d.user.actorId === u.actorId) { S.data = c.d; S.at = c.at; }
   route(true); load(false);
@@ -76,9 +81,13 @@ const skel = () => { $('#view').innerHTML = '<div class="sk"></div><div class="s
 
 /* ---------- Router ---------- */
 function route(first) {
-  const k = (location.hash.match(/^#\/(\w+)/) || [])[1]; const t = TABS.some(x => x[0] === k) ? k : 'home';
+  const tabs = tabsOf(), k = (location.hash.match(/^#\/(\w+)/) || [])[1], t = (tabs.find(x => x[0] === k) || tabs[0])[0];
   const v = $('#view'); if (!v) return;
-  const go = () => { S.tab = t; $('#tb') && ($('#tb').style.setProperty('--i', TABS.findIndex(x => x[0] === t)), $('#tb').querySelectorAll('a').forEach(a => a.classList.toggle('on', a.dataset.k === t))); paint(true); };
+  const go = () => {
+    S.tab = t; const i = tabs.findIndex(x => x[0] === t), tb = $('#tb');
+    if (tb) { tb.style.setProperty('--i', i); tb.querySelectorAll('a').forEach(x => x.classList.toggle('on', x.dataset.k === t)); }
+    const ttl = $('#ttl'); if (ttl) ttl.textContent = tabs[i][1]; paint(true);
+  };
   if (first) return go();
   v.classList.add('out'); setTimeout(go, 140);
 }
@@ -86,6 +95,7 @@ window.addEventListener('hashchange', () => { if (document.body.classList.contai
 
 function paint(animate) {
   const v = $('#view'); if (!v) return;
+  if (tabsOf() === ATABS) { v.className = 'view'; v.innerHTML = aPage(); return; }
   if (!S.data) { skel(); return; }
   if (S.at && $('#sb')) $('#sb').textContent = (areaLabel() ? areaLabel() + ' · ' : '') + 'อัปเดต ' + hhmm(S.at);
   v.className = 'view'; if (animate) { void v.offsetWidth; }
@@ -117,7 +127,7 @@ function pHome() {
 function pPeople() {
   const t = S.data.people || {};
   return `<div class="bar"><input class="srch" id="q" type="search" placeholder="ค้นหาชื่อ / HN / รหัส" value="${esc(S.q)}" autocomplete="off"></div>
-  <div class="chips" id="ch">${[['all', 'ทั้งหมด'], ['todo', 'ยังไม่คัดกรอง'], ['done', 'คัดกรองแล้ว']].map(([k, l]) => `<button class="chip${S.f === k ? ' on' : ''}" data-f="${k}">${l}</button>`).join('')}</div><div id="pl"></div>`;
+  <div class="chips" id="ch">${[['all', 'ทั้งหมด'], ['todo', 'ยังไม่คัดกรอง'], ['done', 'คัดกรองแล้ว']].map(([k, l]) => `<button class="chip${S.f === k ? ' on' : ''}" data-f="${k}">${l}</button>`).join('')}</div><div id="pl" class="lst"></div>`;
 }
 function plist() {
   const q = S.q.trim().toLowerCase(), all = ((S.data.people && S.data.people.people) || []).filter(p => (S.f === 'all' || (S.f === 'todo') === (p.Screening_Status !== 'คัดกรองแล้ว')) && (!q || (pname(p) + ' ' + p.HN + ' ' + p.Person_ID).toLowerCase().includes(q)));
@@ -132,13 +142,19 @@ const FUP = { 'เกินกำหนด': ['bad', 0], 'ใกล้ครบ�
 function pFu() {
   const l = fuList().slice().sort((a, b) => ((FUP[a.Display_Status] || [0, 9])[1] - (FUP[b.Display_Status] || [0, 9])[1]) || (new Date(a.Due_Date) - new Date(b.Due_Date)));
   if (!l.length) return '<div class="empty"><div class="big">✅</div>ยังไม่มีรายการที่ต้องติดตาม</div>';
-  return `<div class="hi">ติดตามผล</div><p class="sub">${l.length} รายการ · เกินกำหนด ${fuCounts().late}</p>` + l.map((f, i) => `<div class="card row" style="--n:${Math.min(i, 10)}"><div class="rb"><b>${esc(f.Name || f.Person_ID)}</b><small><span class="dz ${f.Disease === 'DM' ? 'dm' : ''}">${esc(f.Disease)}</span>ค่าแรก ${esc(f.Initial_Value || '-')} · ครบกำหนด ${thDate(f.Due_Date)}</small></div><span class="pill ${(FUP[f.Display_Status] || ['', 0])[0]}">${esc(f.Display_Status)}</span></div>`).join('');
+  return `<div class="hi">ติดตามผล</div><p class="sub">${l.length} รายการ · เกินกำหนด ${fuCounts().late}</p><div class="lst">` + l.map((f, i) => `<div class="card row" style="--n:${Math.min(i, 10)}"><div class="rb"><b>${esc(f.Name || f.Person_ID)}</b><small><span class="dz ${f.Disease === 'DM' ? 'dm' : ''}">${esc(f.Disease)}</span>ค่าแรก ${esc(f.Initial_Value || '-')} · ครบกำหนด ${thDate(f.Due_Date)}</small></div><span class="pill ${(FUP[f.Display_Status] || ['', 0])[0]}">${esc(f.Display_Status)}</span></div>`).join('') + '</div>';
 }
 function pRef() {
   const l = refList().slice().sort((a, b) => DONE.test(a.Referral_Status) - DONE.test(b.Referral_Status) || new Date(b.Referral_Date) - new Date(a.Referral_Date));
   if (!l.length) return '<div class="empty"><div class="big">📨</div>ยังไม่มีรายการส่งต่อ</div>';
-  return `<div class="hi">การส่งต่อ</div><p class="sub">${l.length} รายการ</p>` + l.map((r, i) => { const d = DONE.test(String(r.Referral_Status || ''));
-    return `<div class="card row" style="--n:${Math.min(i, 10)}"><div class="rb"><b>${esc(r.Name || r.Person_ID)}</b><small><span class="dz ${r.Disease === 'DM' ? 'dm' : ''}">${esc(r.Disease)}</span>${esc(r.Destination || 'รอระบุปลายทาง')} · ${thDate(r.Referral_Date)}</small></div><span class="pill ${d ? 'ok' : 'warn'}">${esc(r.Referral_Status || '-')}</span></div>`; }).join('');
+  return `<div class="hi">การส่งต่อ</div><p class="sub">${l.length} รายการ</p><div class="lst">` + l.map((r, i) => { const d = DONE.test(String(r.Referral_Status || ''));
+    return `<div class="card row" style="--n:${Math.min(i, 10)}"><div class="rb"><b>${esc(r.Name || r.Person_ID)}</b><small><span class="dz ${r.Disease === 'DM' ? 'dm' : ''}">${esc(r.Disease)}</span>${esc(r.Destination || 'รอระบุปลายทาง')} · ${thDate(r.Referral_Date)}</small></div><span class="pill ${d ? 'ok' : 'warn'}">${esc(r.Referral_Status || '-')}</span></div>`; }).join('') + '</div>';
+}
+const AINFO = { ov: ['ภาพรวมระบบ', '📊', 'ความคืบหน้าการคัดกรองรายพื้นที่ และกลุ่มเสี่ยงทั้งอำเภอ'], rp: ['รายงานและส่งออก', '🗂️', 'สรุปรายเดือน/รายพื้นที่ และส่งออกไฟล์ Excel'], us: ['ผู้ใช้งาน', '👥', 'จัดการ อสม. สิทธิ์การเข้าถึง และประวัติการใช้งาน (Audit Log)'] };
+function aPage() {
+  const u = NCD_API.user() || {}, x = AINFO[S.tab] || AINFO.ov;
+  return `<div class="hi">${S.tab === 'ov' ? 'สวัสดี ' + esc(u.displayName || '') : esc(x[0])}</div><p class="sub">${esc(x[0])}</p>
+  <div class="card empty"><div class="big">${x[1]}</div><b>กำลังพัฒนา (Phase 4)</b><p>${esc(x[2])}</p><p>ระหว่างนี้ผู้ดูแลระบบใช้ระบบเดิมไปก่อน</p></div>`;
 }
 
 /* ---------- Interactions ---------- */
