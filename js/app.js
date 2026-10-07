@@ -104,7 +104,7 @@ function pHome() {
   const openRef = refList().filter(r => !DONE.test(String(r.Referral_Status || ''))).length, u = d.user || {};
   const pending = d.bootstrap && d.bootstrap.clinicalRulesReady === false;
   return `<div class="hi">สวัสดี ${esc(u.displayName || '')} 👋</div><p class="sub">${esc(areaLabel())} · ปีคัดกรอง ${esc(p.screeningYear || '')}</p>
-  <div class="card hero"><div class="ring"><svg viewBox="0 0 112 112"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#9ff0c4"/></linearGradient></defs><circle class="tr" cx="56" cy="56" r="46"/><circle class="pg" cx="56" cy="56" r="46" data-p="${pct}"/></svg><b><i data-n="${pct}" style="font-style:normal">0</i><span>%</span></b></div>
+  <div class="card hero"><div class="ring"><svg viewBox="0 0 112 112"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3ba66f"/><stop offset="1" stop-color="#1b6b4a"/></linearGradient></defs><circle class="tr" cx="56" cy="56" r="46"/><circle class="pg" cx="56" cy="56" r="46" data-p="${pct}"/></svg><b><i data-n="${pct}" style="font-style:normal">0</i><span>%</span></b></div>
   <div style="position:relative"><h3>ความคืบหน้าการคัดกรอง</h3><p>คัดกรองแล้ว <b>${sc.toLocaleString()}</b> จาก ${tot.toLocaleString()} คน</p></div></div>
   <div class="grid">
    <button class="card stat" data-go="people" data-f="todo"><b data-n="${Math.max(0, tot - sc)}">0</b><span>ยังไม่คัดกรอง</span></button>
