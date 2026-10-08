@@ -310,3 +310,31 @@ a.row-card .pill { text-decoration: none; }
 .grid2 { align-items: start; }
 .grid2 .people-grid { display: flex !important; flex-direction: column; gap: 10px; }
 .wiz-foot .btn { flex: 0 0 auto; white-space: nowrap; padding-inline: 18px; }
+
+
+/* ===== Welcome overlay (หลังกดเข้าสู่ระบบ) ===== */
+.welcome{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:24px;text-align:center;color:#fff;background:var(--grad);overflow:hidden;animation:wlIn .35s var(--ease) both}
+.welcome.out{animation:wlOut .6s var(--ease) forwards;pointer-events:none}.welcome.gone{display:none}
+@keyframes wlIn{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:none}}
+@keyframes wlOut{0%{clip-path:circle(150% at 50% 42%);opacity:1}70%{opacity:1}100%{clip-path:circle(0% at 50% 42%);opacity:0}}
+.wl-orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5;animation:wlFloat 9s ease-in-out infinite}
+.wl-orb.a{width:340px;height:340px;left:-90px;top:-70px;background:#34d399}.wl-orb.b{width:300px;height:300px;right:-80px;bottom:-60px;background:#6ee7b7;animation-delay:-4s}
+@keyframes wlFloat{50%{transform:translate(24px,-30px) scale(1.1)}}
+.wl-core{position:relative;width:148px;height:148px;display:grid;place-items:center;margin-bottom:22px}
+.wl-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.95) 70%,rgba(255,255,255,0) 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));animation:wlSpin 1.5s linear infinite}
+.wl-core::after{content:"";position:absolute;inset:-14px;border-radius:50%;border:2px solid rgba(255,255,255,.22);animation:wlPulse 2.2s ease-out infinite}
+@keyframes wlSpin{to{transform:rotate(360deg)}}@keyframes wlPulse{0%{transform:scale(.86);opacity:.9}100%{transform:scale(1.28);opacity:0}}
+.wl-logo{width:116px;height:116px;border-radius:50%;background:#fff;padding:6px;display:grid;place-items:center;box-shadow:0 12px 34px rgba(0,0,0,.28);animation:wlBreathe 2.6s ease-in-out infinite}
+.wl-logo img{width:100%;height:100%;border-radius:50%;display:block}@keyframes wlBreathe{50%{transform:scale(1.05)}}
+.wl-hi{margin:0;font-size:26px;font-weight:700;letter-spacing:.2px;animation:wlRise .5s var(--ease) both}.wl-sub{margin:4px 0 18px;opacity:.85;font-size:15px}
+@keyframes wlRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.wl-steps{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:8px;text-align:left;min-width:230px}
+.wl-steps li{display:flex;align-items:center;gap:10px;font-size:15px;opacity:.55;transition:opacity .3s}
+.wl-steps li b{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.55);display:grid;place-items:center;font-size:12px;line-height:1;transition:.3s}
+.wl-steps li.on{opacity:1}.wl-steps li.on b{border-color:#fff;border-top-color:transparent;animation:wlSpin .8s linear infinite}
+.wl-steps li.done{opacity:.95}.wl-steps li.done b{background:#fff;border-color:#fff;color:var(--brand);animation:none}.wl-steps li.done b::before{content:"✓";font-weight:800}
+.wl-bar{width:min(280px,72vw);height:7px;border-radius:99px;background:rgba(255,255,255,.22);overflow:hidden}
+.wl-bar i{display:block;height:100%;width:4%;border-radius:99px;background:linear-gradient(90deg,#ecfdf5,#a7f3d0);transition:width .25s linear}
+.wl-tip{margin:18px 0 0;max-width:320px;min-height:44px;font-size:14px;line-height:1.5;opacity:.88;transition:opacity .28s,transform .28s}.wl-tip.sw{opacity:0;transform:translateY(6px)}
+.wl-skip{margin-top:14px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;border-radius:99px;padding:8px 18px;font:600 14px var(--f);cursor:pointer;animation:wlRise .4s both}
+@media (prefers-reduced-motion:reduce){.wl-orb,.wl-logo,.wl-core::after{animation:none}.wl-ring{animation-duration:3s}.welcome.out{animation:none;opacity:0}}

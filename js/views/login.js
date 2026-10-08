@@ -3,6 +3,7 @@ import { clearAll } from '../store.js';
 import { h, icon, seg } from '../ui.js';
 import { CONFIG } from '../config.js';
 import { go, canInstall, installApp } from '../shell.js';
+import { welcome } from '../splash.js';
 
 const fmtCid = d => { d = d.replace(/\D/g, '').slice(0, 13); const p = [d.slice(0, 1), d.slice(1, 5), d.slice(5, 10), d.slice(10, 12), d.slice(12, 13)].filter(Boolean); return p.join('-'); };
 
@@ -39,11 +40,13 @@ export function loginView() {
       call = () => api.adminLogin(u, p);
     }
     busy = true; btn.disabled = true; btn.replaceChildren(h('span', { class: 'spin' }), 'กำลังตรวจสอบ...');
+    const wl = welcome(); wl.step(1);
     try {
       const r = await call();
       clearAll(); session.set({ token: r.token, expiresAt: r.expiresAt, user: r.user });
+      wl.user(r.user.displayName); wl.step(2); wl.waitData();
       go(r.user.role === 'ADMIN' ? '#/admin' : '#/home');
-    } catch (x) { fail(x.message || 'เข้าสู่ระบบไม่สำเร็จ'); }
+    } catch (x) { wl.cancel(); fail(x.message || 'เข้าสู่ระบบไม่สำเร็จ'); }
     finally { busy = false; btn.disabled = false; btn.replaceChildren('เข้าสู่ระบบ'); }
   });
   function fail(msg, sel) {

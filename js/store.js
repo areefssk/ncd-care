@@ -1,6 +1,7 @@
 /* แคชในหน่วยความจำ: แสดงข้อมูลเดิมทันที แล้วโหลดใหม่เบื้องหลัง (ไม่เก็บข้อมูลบุคคลลงเครื่องถาวร) */
 import { CONFIG } from './config.js';
 const mem = new Map();
+const emit = (name, key) => { try { document.dispatchEvent(new CustomEvent(name, { detail: { key } })); } catch {} };
 export async function cached(key, fetcher, { ttl = CONFIG.CACHE_TTL_MS, onData, force = false } = {}) {
   const hit = mem.get(key);
   if (hit && !force) onData?.(hit.data, { stale: Date.now() - hit.t > ttl });
@@ -9,9 +10,11 @@ export async function cached(key, fetcher, { ttl = CONFIG.CACHE_TTL_MS, onData, 
     const data = await fetcher();
     mem.set(key, { t: Date.now(), data });
     onData?.(data, { stale: false });
+    emit('ncd:data', key);
     return data;
   } catch (e) {
     if (hit) { e.keptStale = true; onData?.(hit.data, { stale: true, error: e }); return hit.data; }
+    emit('ncd:data-error', key);
     throw e;
   }
 }
