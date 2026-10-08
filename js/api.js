@@ -1,48 +1,87 @@
-/* NCD Care V2.1 — API connector (Phase 2)
- * timeout + retry (เฉพาะ GET) + ข้อความ error ภาษาไทย + จำข้อมูลล่าสุดในเครื่อง
- */
-const NCD_API = (() => {
-  const URL_ = 'https://script.google.com/macros/s/AKfycby8zASHAdvCSNq9EPFIV-8kE91a106O_5cnuLr8DiDOFddjQeVvL3_Kq1LXL1pjZz6-/exec';
-  const K = { tok: 'ncd2_token', usr: 'ncd2_user', cache: 'ncd2_cache' };
-  const TIMEOUT = 25000;
-  const ls = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
-               set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
-               del: k => { try { localStorage.removeItem(k); } catch (e) {} } };
-  const token = () => ls.get(K.tok) || '';
-  const user = () => { try { return JSON.parse(ls.get(K.usr) || 'null'); } catch (e) { return null; } };
-  const saveSession = d => { ls.set(K.tok, d.token); ls.set(K.usr, JSON.stringify(d.user || null)); };
-  const clearSession = () => { ls.del(K.tok); ls.del(K.usr); ls.del(K.cache); };
-  const cacheGet = () => { try { return JSON.parse(ls.get(K.cache) || 'null'); } catch (e) { return null; } };
-  const cachePut = d => ls.set(K.cache, JSON.stringify({ at: Date.now(), d }));
+/* ตัวเชื่อม Backend (Apps Script) — มี timeout, retry เฉพาะการอ่าน, และไม่ทำให้ผู้ใช้หลุดเพราะเน็ตสะดุด */
+import { CONFIG } from './config.js';
+import * as demo from './demo-api.js';
 
-  const MSG = { UNAUTHORIZED: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่', SESSION_EXPIRED: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่',
-    LOGIN_FAILED: 'ไม่พบบัญชีนี้ หรือบัญชีถูกปิดใช้งาน', INVALID_CID: 'กรุณากรอกเลขบัตรประชาชน 13 หลัก' };
-  function fail(code, message) { const e = new Error(MSG[code] || message || 'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง'); e.code = code; return e; }
+export class ApiError extends Error {
+  constructor(code, message, extra = {}) { super(message); this.code = code; Object.assign(this, extra); }
+}
+export const isDemo = () => CONFIG.DEMO || new URLSearchParams(location.search).has('demo');
 
-  async function call(url, opts, retries) {
-    for (let i = 0; ; i++) {
-      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), TIMEOUT);
-      try {
-        const res = await fetch(url, Object.assign({ redirect: 'follow', signal: ctl.signal }, opts));
-        const p = await res.json();
-        if (!p || p.ok !== true) throw fail(p && p.error && p.error.code, p && p.error && p.error.message);
-        return p.data;
-      } catch (e) {
-        if (e.code) { if (e.code === 'UNAUTHORIZED' || e.code === 'SESSION_EXPIRED') window.dispatchEvent(new Event('ncd:expired')); throw e; }
-        if (i >= retries) throw fail('NETWORK', e.name === 'AbortError' ? 'เซิร์ฟเวอร์ตอบช้า ลองใหม่อีกครั้ง' : 'เชื่อมต่อไม่ได้ ตรวจสอบอินเทอร์เน็ต');
-        await new Promise(r => setTimeout(r, 600 * (i + 1)));
-      } finally { clearTimeout(t); }
+const SK = 'ncd.session';
+export const session = {
+  get() { try { return JSON.parse(localStorage.getItem(SK) || 'null'); } catch { return null; } },
+  set(v) { try { localStorage.setItem(SK, JSON.stringify(v)); } catch {} },
+  clear() { try { localStorage.removeItem(SK); } catch {} },
+  token() { return this.get()?.token || ''; }
+};
+let onAuthError = () => {};
+export const setAuthHandler = fn => { onAuthError = fn; };
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const configured = () => /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec/.test(CONFIG.API_URL);
+
+async function once(method, action, params) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), CONFIG.TIMEOUT_MS);
+  try {
+    let res;
+    if (method === 'GET') {
+      const u = new URL(CONFIG.API_URL); u.searchParams.set('action', action);
+      for (const [k, v] of Object.entries(params || {})) if (v !== undefined && v !== null && v !== '') u.searchParams.set(k, String(v));
+      res = await fetch(u, { signal: ctl.signal, redirect: 'follow' });
+    } else {
+      res = await fetch(CONFIG.API_URL, { method: 'POST', signal: ctl.signal, redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, ...params }) });
+    }
+    let payload;
+    try { payload = await res.json(); } catch { throw new ApiError('BAD_RESPONSE', 'เซิร์ฟเวอร์ตอบกลับผิดรูปแบบ กรุณาแจ้งผู้ดูแลระบบ'); }
+    if (!payload || payload.ok !== true) {
+      const e = payload?.error || {};
+      throw new ApiError(e.code || 'API_ERROR', e.message || 'เกิดข้อผิดพลาดจากระบบ', { requestId: payload?.requestId });
+    }
+    return payload.data;
+  } catch (e) {
+    if (e instanceof ApiError) throw e;
+    if (e.name === 'AbortError') throw new ApiError('TIMEOUT', 'ระบบตอบกลับช้า กรุณาลองอีกครั้ง');
+    throw new ApiError('NETWORK', navigator.onLine === false ? 'ไม่มีสัญญาณอินเทอร์เน็ต' : 'เชื่อมต่อระบบไม่ได้ กรุณาลองอีกครั้ง');
+  } finally { clearTimeout(timer); }
+}
+
+async function call(method, action, params = {}, { retries = method === 'GET' ? 2 : 0 } = {}) {
+  if (!configured()) throw new ApiError('NOT_CONFIGURED', 'ยังไม่ได้ตั้งค่า API_URL ในไฟล์ js/config.js');
+  let attempt = 0;
+  for (;;) {
+    try { return await once(method, action, params); }
+    catch (e) {
+      if (['UNAUTHORIZED', 'SESSION_EXPIRED'].includes(e.code)) { session.clear(); onAuthError(e); throw e; }
+      if (attempt < retries && ['NETWORK', 'TIMEOUT'].includes(e.code)) { await sleep(600 * (attempt + 1) ** 2); attempt++; continue; }
+      throw e;
     }
   }
-  const get = (action, params = {}) => {
-    const u = new URL(URL_); u.searchParams.set('action', action);
-    Object.entries(Object.assign({ token: token() }, params)).forEach(([k, v]) => { if (v !== undefined && v !== '') u.searchParams.set(k, v); });
-    return call(u.toString(), { method: 'GET' }, 2);
-  };
-  const post = (action, body = {}) => call(URL_, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action, token: token() }, body)) }, 0);
+}
 
-  return { token, user, saveSession, clearSession, cacheGet, cachePut,
-    volunteerLogin: cid => post('volunteerLogin', { cid, token: undefined }),
-    adminLogin: (username, password) => post('adminLogin', { username, password, token: undefined }),
-    home: () => get('home'), logout: () => post('logout').catch(() => {}) };
-})();
+const t = () => ({ token: session.token() });
+const real = {
+  volunteerLogin: cid => call('POST', 'volunteerLogin', { cid }),
+  adminLogin: (username, password) => call('POST', 'adminLogin', { username, password }),
+  logout: () => (session.token() ? call('POST', 'logout', t()).catch(() => {}) : Promise.resolve()),
+  me: () => call('GET', 'me', t()),
+  home: () => call('GET', 'home', t()),
+  areas: () => call('GET', 'areas', t()),
+  people: (o = {}) => call('GET', 'people', { ...t(), ...o }),
+  followUps: (o = {}) => call('GET', 'followUps', { ...t(), ...o }),
+  referrals: (o = {}) => call('GET', 'referrals', { ...t(), ...o }),
+  dashboardSummary: (o = {}) => call('GET', 'dashboardSummary', { ...t(), ...o }),
+  createScreening: p => call('POST', 'createScreening', { ...t(), ...p }),
+  saveFollowUp: p => call('POST', 'saveFollowUp', { ...t(), ...p }),
+  createReferral: p => call('POST', 'createReferral', { ...t(), ...p }),
+  saveReferral: p => call('POST', 'saveReferral', { ...t(), ...p })
+};
+export const api = new Proxy({}, { get: (_, k) => (isDemo() ? demo.api[k] : real[k]) });
+
+/* หน้าแรกของ อสม. ใช้ข้อมูลหลายชุดพร้อมกัน (รายชื่อ/งานติดตาม/ส่งต่อ/พื้นที่) — รวมเป็นคำขอเดียวไปที่ Backend (endpoint home)
+   ถ้ามีหลายส่วนขอพร้อมกัน จะแชร์คำขอเดียวกัน */
+let homeFlight = null;
+export function homeOnce() {
+  if (!homeFlight) homeFlight = api.home().finally(() => { setTimeout(() => { homeFlight = null; }, 0); });
+  return homeFlight;
+}
