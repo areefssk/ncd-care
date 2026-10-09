@@ -1,9 +1,9 @@
 /* NCD Care service worker: เก็บเฉพาะไฟล์หน้าเว็บ (shell) ไว้เปิดเร็ว ไม่เก็บข้อมูลจาก API */
-const VERSION = 'ncd-care-v5';
+const VERSION = 'ncd-care-v6';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js', 'js/config.js', 'js/api.js', 'js/demo-api.js', 'js/store.js', 'js/ui.js', 'js/rules.js',
-  'js/shell.js', 'js/splash.js', 'js/views/reports.js', 'js/views/login.js', 'js/views/volunteer.js', 'js/views/screening.js', 'js/views/admin.js',
+  'js/shell.js', 'js/splash.js', 'js/views/reports.js', 'js/areamap.js', 'js/areageo.js', 'js/views/login.js', 'js/views/volunteer.js', 'js/views/screening.js', 'js/views/admin.js',
   'assets/logo.png', 'assets/icon-192.png', 'assets/favicon.png'
 ];
 self.addEventListener('install', e => {

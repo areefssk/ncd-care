@@ -6,7 +6,9 @@ import { LEVELS, fromServer } from '../rules.js';
 import { CONFIG } from '../config.js';
 import { go, loadAreas, areaName, areaLabel, setBadge } from '../shell.js';
 import { followPanel, referralPanel } from './volunteer.js';
+import { areaMap } from '../areamap.js';
 
+const mapOf = (d, areas, title, sub) => areaMap({ areas: d.areas, labelOf: id => areaLabel(areas, id), title, sub });
 const loadDash = (onData, force = false) => cached('dash', () => api.dashboardSummary(), { onData, force, ttl: 60000 });
 const FISCAL = [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8], MONTHS = ['ต.ค.', 'พ.ย.', 'ธ.ค.', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.'];
 const grow = el => requestAnimationFrame(() => requestAnimationFrame(() => el.querySelectorAll('[data-w]').forEach(x => (x.style.width = x.dataset.w))));
@@ -52,17 +54,16 @@ function build(d, areas, first, refresh) {
     head('ภาพรวมการคัดกรอง', `ปี ${d.year} · ${CONFIG.HOSPITAL}`, h('button', { class: 'btn small', onclick: refresh }, icon('refresh'), d.cache?.hit ? 'ข้อมูลจากแคช · โหลดใหม่' : 'โหลดข้อมูลใหม่')),
     h('div', { class: 'kpis' }, kpi('เป้าหมาย', P.target || 0, 'คนใน ' + (d.areas || []).length + ' พื้นที่', '', 'users'), kpi('คัดกรองแล้ว', P.screened || 0, 'คน', '', 'check'), kpi('ยังไม่คัดกรอง', P.unscreened || 0, 'คน', '', 'clock'), covKpi,
       kpi('งานติดตามค้าง', d.followUp?.open || 0, 'ทุกพื้นที่', '', 'calendar', '#/admin/follow'), kpi('ส่งต่อที่เปิดอยู่', d.referral?.open || 0, 'ทุกพื้นที่', '', 'send', '#/admin/referrals')),
+    mapOf(d, areas) || h('section', { class: 'panel rise', style: { '--i': 1 } }, h('h3', {}, 'ความครอบคลุมรายพื้นที่'), h('p', { class: 'sub' }, 'คัดกรองแล้วเทียบกับเป้าหมาย กดดูรายละเอียดแต่ละหมู่'), areaRows.length ? areaRows : empty('ยังไม่มีข้อมูลพื้นที่')),
     h('div', { class: 'grid2' },
-      h('section', { class: 'panel rise', style: { '--i': 1 } }, h('h3', {}, 'ความครอบคลุมรายพื้นที่'), h('p', { class: 'sub' }, 'คัดกรองแล้วเทียบกับเป้าหมาย กดดูรายละเอียดแต่ละหมู่'), areaRows.length ? areaRows : empty('ยังไม่มีข้อมูลพื้นที่')),
       h('section', { class: 'panel rise', style: { '--i': 2 } }, h('h3', {}, 'ผลคัดกรอง HT และ DM'), h('p', { class: 'sub' }, 'สัดส่วนจากผู้ที่คัดกรองแล้ว'),
-        h('div', { class: 'mix' }, mix('ความดันโลหิต (HT)', [['ปกติ', ht.normal || 0, 'var(--ok)'], ['เสี่ยง', ht.risk || 0, 'var(--risk)'], ['สงสัย', ht.suspected || 0, 'var(--sus)'], ['เร่งด่วน', ht.urgent || 0, 'var(--urg)']]), mix('เบาหวาน (DM)', [['ปกติ', dm.normal || 0, 'var(--ok)'], ['เสี่ยง', dm.risk || 0, 'var(--risk)'], ['สงสัย', dm.suspected || 0, 'var(--sus)']])))),
-    h('div', { class: 'grid2' },
-      h('section', { class: 'panel rise', style: { '--i': 3 } }, h('h3', {}, 'จำนวนผู้คัดกรองรายเดือน'), h('p', { class: 'sub' }, 'เรียงตามปีงบประมาณ ตุลาคมถึงกันยายน'), monthly(d.monthly || [])),
+        h('div', { class: 'mix' }, mix('ความดันโลหิต (HT)', [['ปกติ', ht.normal || 0, 'var(--ok)'], ['เสี่ยง', ht.risk || 0, 'var(--risk)'], ['สงสัย', ht.suspected || 0, 'var(--sus)'], ['เร่งด่วน', ht.urgent || 0, 'var(--urg)']]), mix('เบาหวาน (DM)', [['ปกติ', dm.normal || 0, 'var(--ok)'], ['เสี่ยง', dm.risk || 0, 'var(--risk)'], ['สงสัย', dm.suspected || 0, 'var(--sus)']]))),
       h('section', { class: 'panel rise', style: { '--i': 4 } }, h('h3', {}, 'ศูนย์จัดการงาน'), h('p', { class: 'sub' }, 'รายการที่ต้องดำเนินการ'),
         h('div', { class: 'need' },
           h('a', { class: 'row-card', href: '#/admin/follow' }, h('div', { class: 'av ht' }, icon('calendar')), h('div', { class: 'grow' }, h('b', {}, 'งานติดตามที่ค้าง'), h('small', {}, 'ตรวจรายการเกินกำหนดและใกล้ครบกำหนด')), h('span', { class: 'pill p-sus' }, fmt.n(d.followUp?.open || 0))),
           h('a', { class: 'row-card', href: '#/admin/referrals' }, h('div', { class: 'av ht' }, icon('send')), h('div', { class: 'grow' }, h('b', {}, 'การส่งต่อที่เปิดอยู่'), h('small', {}, 'อัปเดตสถานะและบันทึกผลประเมิน')), h('span', { class: 'pill ' + (d.referral?.open ? 'p-urg' : 'p-ok') }, fmt.n(d.referral?.open || 0))),
-          h('a', { class: 'row-card', href: '#/admin/areas' }, h('div', { class: 'av' }, icon('map')), h('div', { class: 'grow' }, h('b', {}, 'ดูรายพื้นที่'), h('small', {}, 'เปรียบเทียบความคืบหน้าแต่ละหมู่')), icon('chevron')))))
+          h('a', { class: 'row-card', href: '#/admin/areas' }, h('div', { class: 'av' }, icon('map')), h('div', { class: 'grow' }, h('b', {}, 'ดูรายพื้นที่'), h('small', {}, 'เปรียบเทียบความคืบหน้าแต่ละหมู่')), icon('chevron'))))),
+    h('section', { class: 'panel rise', style: { '--i': 3 } }, h('h3', {}, 'จำนวนผู้คัดกรองรายเดือน'), h('p', { class: 'sub' }, 'เรียงตามปีงบประมาณ ตุลาคมถึงกันยายน'), monthly(d.monthly || []))
   ];
 }
 function monthly(calendar) {
@@ -88,6 +89,7 @@ export function adminAreasView() {
   const draw = () => {
     if (root.__dead || !d) return; const first = !drawn; drawn = true; root.classList.toggle('no-anim', !first);
     root.replaceChildren(head('พื้นที่รับผิดชอบ', `${(d.areas || []).length} หมู่บ้าน · เรียงตามรหัสพื้นที่`),
+      mapOf(d, areas, 'แผนที่หมู่บ้าน', 'กดที่หมู่เพื่อดูสรุป · ข้อมูลรายหมู่อยู่ด้านล่าง'),
       h('div', { class: 'area-grid' }, (d.areas || []).map((a, i) => h('a', { class: 'area-card rise', style: { '--i': i }, href: '#/admin/area/' + encodeURIComponent(a.areaId) },
         h('div', { class: 'top' }, h('div', {}, h('b', {}, areaLabel(areas, a.areaId)), h('small', { class: 'muted', style: { display: 'block' } }, a.areaId)), h('span', { class: 'pct' }, a.coverage + '%')),
         h('div', { class: 'bar' }, h('i', { 'data-w': a.coverage + '%' })),

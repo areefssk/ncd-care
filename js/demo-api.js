@@ -67,6 +67,9 @@ export const api = {
   async dashboardSummary() {
     await wait(700);
     const areas = AREAS.map(a => ({ areaId: a[0], target: a[3], screened: SCREENED[a[0]], unscreened: a[3] - SCREENED[a[0]], coverage: Math.round(SCREENED[a[0]] / a[3] * 1000) / 10 }));
+    areas.forEach((a, i) => { const rs = Math.round(a.screened * (0.1 + 0.04 * (i % 5))), su = Math.round(rs * 0.4), ur = i % 3 === 0 ? Math.max(1, Math.round(su * 0.2)) : 0;
+      a.ht = { normal: a.screened - rs, risk: rs - su, suspected: su - ur, urgent: ur }; a.dm = { normal: Math.round(a.screened * 0.7), risk: Math.round(a.screened * 0.2), suspected: Math.round(a.screened * 0.1) };
+      a.followOpen = Math.round(a.screened * 0.06); a.followLate = i % 2 ? Math.round(a.followOpen * 0.4) : 0; a.referralOpen = ur + (i % 4 === 1 ? 1 : 0); });
     const screened = areas.reduce((n, a) => n + a.screened, 0), target = areas.reduce((n, a) => n + a.target, 0);
     return { year: '2570', population: { target, screened, unscreened: target - screened, coverage: Math.round(screened / target * 1000) / 10 },
       ht: { normal: 455, risk: 181, suspected: 104, urgent: 24 }, dm: { normal: 552, risk: 148, suspected: 64 },
