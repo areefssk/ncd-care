@@ -1,5 +1,5 @@
 /* NCD Care service worker: เก็บเฉพาะไฟล์หน้าเว็บ (shell) ไว้เปิดเร็ว ไม่เก็บข้อมูลจาก API */
-const VERSION = 'ncd-care-v4';
+const VERSION = 'ncd-care-v5';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js', 'js/config.js', 'js/api.js', 'js/demo-api.js', 'js/store.js', 'js/ui.js', 'js/rules.js',
