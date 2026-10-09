@@ -8,11 +8,12 @@ import { loginView } from './views/login.js';
 import { homeView, peopleView, followView, followWorkView, referralsView } from './views/volunteer.js';
 import { screeningView } from './views/screening.js';
 import { adminDashView, adminAreasView, adminAreaView, adminFollowView, adminRefView } from './views/admin.js';
+import { adminReportView } from './views/reports.js';
 
 const V = 'VOLUNTEER', A = 'ADMIN';
 const NAV = {
   [V]: [['#/home', 'home', 'หน้าแรก'], ['#/people', 'users', 'รายชื่อ'], ['#/follow', 'calendar', 'ติดตาม'], ['#/referrals', 'send', 'ส่งต่อ']],
-  [A]: [['#/admin', 'chart', 'ภาพรวม'], ['#/admin/areas', 'map', 'พื้นที่'], ['#/admin/follow', 'calendar', 'งานติดตาม'], ['#/admin/referrals', 'send', 'ส่งต่อ']]
+  [A]: [['#/admin', 'chart', 'ภาพรวม'], ['#/admin/areas', 'map', 'พื้นที่'], ['#/admin/follow', 'calendar', 'งานติดตาม'], ['#/admin/referrals', 'send', 'ส่งต่อ'], ['#/admin/reports', 'download', 'รายงาน']]
 };
 const ROUTES = [
   [/^#\/login$/, { view: loginView, shell: 'none', pub: 1, depth: 0 }],
@@ -26,7 +27,8 @@ const ROUTES = [
   [/^#\/admin\/areas$/, { view: adminAreasView, role: A, nav: 1, title: 'พื้นที่', depth: 1 }],
   [/^#\/admin\/area\/([^/?]+)$/, { view: adminAreaView, role: A, nav: 1, title: 'รายละเอียดพื้นที่', depth: 2, parent: '#/admin/areas' }],
   [/^#\/admin\/follow$/, { view: adminFollowView, role: A, nav: 2, title: 'งานติดตาม', depth: 1 }],
-  [/^#\/admin\/referrals$/, { view: adminRefView, role: A, nav: 3, title: 'การส่งต่อ', depth: 1 }]
+  [/^#\/admin\/referrals$/, { view: adminRefView, role: A, nav: 3, title: 'การส่งต่อ', depth: 1 }],
+  [/^#\/admin\/reports$/, { view: adminReportView, role: A, nav: 4, title: 'รายงาน', depth: 1 }]
 ];
 const homeOf = role => (role === A ? '#/admin' : '#/home');
 const roleOf = () => session.get()?.user?.role === A ? A : session.get()?.user?.role === V ? V : null;

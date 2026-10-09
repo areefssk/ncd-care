@@ -74,7 +74,10 @@ const real = {
   createScreening: p => call('POST', 'createScreening', { ...t(), ...p }),
   saveFollowUp: p => call('POST', 'saveFollowUp', { ...t(), ...p }),
   createReferral: p => call('POST', 'createReferral', { ...t(), ...p }),
-  saveReferral: p => call('POST', 'saveReferral', { ...t(), ...p })
+  saveReferral: p => call('POST', 'saveReferral', { ...t(), ...p }),
+  reportMeta: () => call('POST', 'reportMeta', t()),
+  report: p => call('POST', 'report', { ...t(), ...p }),
+  reportExportLog: p => call('POST', 'reportExportLog', { ...t(), ...p })
 };
 export const api = new Proxy({}, { get: (_, k) => (isDemo() ? demo.api[k] : real[k]) });
 

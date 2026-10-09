@@ -112,3 +112,18 @@ export const api = {
 
 /* โหมดสาธิต: รวมข้อมูลหน้าแรกให้เหมือน endpoint home ของ Backend */
 api.home = async () => { const [areas, people, followUps, referrals] = await Promise.all([api.areas(), api.people({ limit: 5000 }), api.followUps({}), api.referrals({})]); return { areas, people, followUps, referrals }; };
+
+/* โหมดสาธิต: รายงานข้อมูลสมมติ (ไม่ใช่ข้อมูลจริง) */
+api.reportMeta = async () => ({ year: '2570', maxRows: 5000, areas: await api.areas(), volunteers: [{ id: 'DEMO1', name: 'นางสาวสาธิต ใจดี', areaId: 'SAKO-01' }, { id: 'DEMO2', name: 'นายตัวอย่าง รักสุข', areaId: 'SAKO-01' }] });
+api.report = async p => {
+  await wait(400);
+  const areas = (await api.areas()).map(a => a.Area_ID), sts = ['NORMAL', 'RISK', 'SUSPECTED', 'URGENT'], dms = ['NORMAL', 'RISK', 'SUSPECTED'];
+  const want = String(p.areas || '').split(',').filter(Boolean), grp = String(p.groups || '').split(',').filter(Boolean);
+  const rows = Array.from({ length: 36 }, (_, i) => ({ screeningId: 'DEMO-' + i, date: '2026-10-' + String(1 + (i % 9)).padStart(2, '0'), time: '09:30:00', areaId: areas[i % areas.length], tambon: 'ซากอ', moo: String(1 + (i % 3)), hn: String(1000 + i).padStart(7, '0'), name: 'ตัวอย่าง คนที่ ' + (i + 1), age: 40 + (i % 30), sex: i % 2 ? 'ชาย' : 'หญิง', sbp: 110 + (i % 8) * 10, dbp: 70 + (i % 6) * 5, htGroup: sts[i % 4], glucoseType: i % 2 ? 'FBS' : 'RBS', glucose: 90 + (i % 7) * 15, dmStatus: dms[i % 3], bmi: 22.5, weight: 60, height: 160, volunteerId: 'DEMO1', volunteerName: 'นางสาวสาธิต ใจดี', fuHtDue: '', fuHtStatus: '', fuDmDue: '', fuDmStatus: '', cid: p.includeCid === false ? undefined : '000000000000' + (i % 10) }))
+    .filter(r => (!want.length || want.includes(r.areaId)) && (!grp.length || grp.includes(r.htGroup) || grp.includes(r.dmStatus)));
+  const z = () => ({ NORMAL: 0, RISK: 0, SUSPECTED: 0, URGENT: 0 }), ht = z(), dm = z(), byArea = {};
+  rows.forEach(r => { ht[r.htGroup]++; dm[r.dmStatus]++; const a = (byArea[r.areaId] = byArea[r.areaId] || { areaId: r.areaId, tambon: r.tambon, moo: r.moo, total: 0, ht: z(), dm: z() }); a.total++; a.ht[r.htGroup]++; a.dm[r.dmStatus]++; });
+  return { generatedAt: new Date().toISOString(), filters: { from: p.from || '', to: p.to || '', areas: want, volunteers: [], groups: grp, disease: p.disease || 'ANY', includeCid: p.includeCid !== false }, total: rows.length, truncated: false, maxRows: 5000, summary: { ht, dm, byArea: Object.values(byArea), byVolunteer: [{ id: 'DEMO1', name: 'นางสาวสาธิต ใจดี', total: rows.length }] }, rows };
+};
+api.reportExportLog = async () => ({ logged: true });
+
