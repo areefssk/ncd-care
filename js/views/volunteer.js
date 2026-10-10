@@ -230,7 +230,7 @@ export function referralPanel({ areaId = '', canEdit = false } = {}) {
   return root;
 }
 const STEPS = ['OPEN', 'REFERRED', 'ARRIVED', 'ASSESSED', 'COMPLETED'];
-function openReferral(r, canEdit, areaId, after) {
+export function openReferral(r, canEdit, areaId, after) {
   const cur = String(r.Referral_Status).toUpperCase(), idx = STEPS.indexOf(cur), next = REFERRAL_NEXT[cur];
   const [label, tone] = REFERRAL_STATUS[cur] || [cur, 'none'];
   const note = h('textarea', { class: 'textarea', rows: 3, placeholder: 'บันทึกเพิ่มเติม (ถ้ามี)', 'aria-label': 'บันทึกเพิ่มเติม' });

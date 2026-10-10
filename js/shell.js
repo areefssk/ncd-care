@@ -2,7 +2,8 @@
 import { api, session, homeOnce } from './api.js';
 import { cached, clearAll } from './store.js';
 import { CONFIG } from './config.js';
-import { h, $, icon, openSheet, toast, initial, fmt } from './ui.js';
+import { h, $, icon, openSheet, toast, initial, fmt, seg } from './ui.js';
+import { fxPref, setFx } from './fx.js';
 
 export const user = () => session.get()?.user || null;
 export function go(hash) {
@@ -54,7 +55,8 @@ export function openProfile() {
     title: 'บัญชีผู้ใช้',
     body: h('div', { class: 'sheet-body' },
       h('div', { class: 'row-card', style: { cursor: 'default' } }, h('div', { class: 'av' }, initial(u.displayName)), h('div', { class: 'grow' }, h('b', {}, u.displayName), h('small', {}, roleLabel))),
-      h('dl', { class: 'kv' }, h('dt', {}, 'โรงพยาบาล'), h('dd', {}, CONFIG.HOSPITAL), u.areaId ? [h('dt', {}, 'พื้นที่'), h('dd', {}, u.areaId)] : null, h('dt', {}, 'เวอร์ชัน'), h('dd', {}, CONFIG.VERSION))),
+      h('dl', { class: 'kv' }, h('dt', {}, 'โรงพยาบาล'), h('dd', {}, CONFIG.HOSPITAL), u.areaId ? [h('dt', {}, 'พื้นที่'), h('dd', {}, u.areaId)] : null, h('dt', {}, 'เวอร์ชัน'), h('dd', {}, CONFIG.VERSION)),
+      h('div', { class: 'fxrow' }, h('b', {}, 'เอฟเฟกต์ภาพ'), seg([['auto', 'อัตโนมัติ'], ['full', 'เต็ม'], ['lite', 'ประหยัด']], fxPref(), v => { setFx(v); toast(v === 'lite' ? 'เปิดโหมดประหยัดเอฟเฟกต์แล้ว' : v === 'full' ? 'เปิดเอฟเฟกต์เต็มแล้ว' : 'ตั้งเป็นอัตโนมัติแล้ว', 'ok'); }), h('small', { class: 'muted' }, 'ถ้าเครื่องกระตุกหรือหน่วง ให้เลือก “ประหยัด”'))),
     actions: [
       canInstall() ? h('button', { class: 'btn', onclick: () => { sheet.close(); installApp(); } }, icon('download'), 'ติดตั้งแอปบนเครื่องนี้') : null,
       h('button', { class: 'btn danger', onclick: async e => { e.currentTarget.disabled = true; sheet.close(); await logout(); toast('ออกจากระบบแล้ว', 'ok'); } }, icon('logout'), 'ออกจากระบบ')

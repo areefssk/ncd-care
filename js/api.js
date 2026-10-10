@@ -66,6 +66,7 @@ const real = {
   logout: () => (session.token() ? call('POST', 'logout', t()).catch(() => {}) : Promise.resolve()),
   me: () => call('GET', 'me', t()),
   home: () => call('GET', 'home', t()),
+  cases: () => call('GET', 'cases', t()),
   areas: () => call('GET', 'areas', t()),
   people: (o = {}) => call('GET', 'people', { ...t(), ...o }),
   followUps: (o = {}) => call('GET', 'followUps', { ...t(), ...o }),

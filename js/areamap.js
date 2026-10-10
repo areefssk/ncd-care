@@ -3,6 +3,7 @@
  * จุดเตือนกะพริบ, เอียงตามเมาส์, แสงกวาดผ่านแผนที่, ตัวเลข/วงแหวนนับขึ้น */
 import { h, icon, fmt, countUp } from './ui.js';
 import { GEO, GEO_META as META } from './areageo.js';
+import { isLite } from './fx.js';
 
 const rm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -84,7 +85,7 @@ export function areaMap({ areas, labelOf, title = 'ความครอบค�
 
   /* เอียงตามเมาส์ (เฉพาะจอที่มีเมาส์) */
   if (!rm() && matchMedia('(pointer: fine)').matches) {
-    stage.addEventListener('pointermove', e => { const r = stage.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5; tilt.style.transform = `perspective(1200px) rotateX(${(-y * 3.2).toFixed(2)}deg) rotateY(${(x * 4.2).toFixed(2)}deg)`; });
+    stage.addEventListener('pointermove', e => { if (isLite()) return; const r = stage.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5; tilt.style.transform = `perspective(1200px) rotateX(${(-y * 3.2).toFixed(2)}deg) rotateY(${(x * 4.2).toFixed(2)}deg)`; });
     stage.addEventListener('pointerleave', () => { tilt.style.transform = ''; });
   }
 

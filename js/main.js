@@ -1,5 +1,7 @@
 /* จุดเริ่มต้นแอป: ตัวสลับหน้า (router) + โครงหน้า (เมนูข้าง/เมนูล่าง) + เอฟเฟกต์สลับหน้า */
 import { CONFIG } from './config.js';
+import { applyFx } from './fx.js';
+applyFx();
 import { session, isDemo, setAuthHandler } from './api.js';
 import { clearAll } from './store.js';
 import { h, $, icon, toast, reduceMotion, initial } from './ui.js';
@@ -50,7 +52,7 @@ function buildShell(role) {
     h('img', { class: 'only-mobile', id: 'topLogo', src: 'assets/logo.png', alt: '', width: 34, height: 34, style: { borderRadius: '50%' } }),
     h('h1', { id: 'topTitle' }, 'NCD Care'),
     h('button', { class: 'avatar', 'aria-label': 'บัญชีผู้ใช้', onclick: openProfile }, initial(u?.displayName)));
-  const nav = h('nav', { class: 'bottom-nav', 'aria-label': 'เมนูหลัก' }, link(''));
+  const nav = h('nav', { class: 'bottom-nav', 'aria-label': 'เมนูหลัก', style: { '--cols': items.length } }, link(''));
   const app = h('div', { class: 'app has-side', 'data-role': role }, side, h('div', { class: 'main' }, top, h('main', { id: 'view', tabindex: '-1' })), nav);
   app.append();
   return app;
@@ -86,10 +88,13 @@ function decorate(route, role) {
 function swap(node, dir, animate) {
   const view = $('#view');
   const old = view.firstElementChild; if (old) old.__dead = true;
-  const apply = () => { view.replaceChildren(node); window.scrollTo(0, 0); };
+  view.replaceChildren(node); window.scrollTo(0, 0);
   document.documentElement.dataset.dir = dir;
-  if (animate && old && document.startViewTransition && !reduceMotion()) document.startViewTransition(apply);
-  else { apply(); if (animate && !reduceMotion()) { node.classList.add('view-enter'); if (dir === 'back') node.classList.add('back'); } }
+  // เอฟเฟกต์สลับหน้าแบบเบา (ใช้เฉพาะ transform/opacity) — ไม่ใช้ View Transitions เพราะกระตุก/กระพริบบนมือถือ
+  if (animate && !reduceMotion()) {
+    node.classList.add('view-enter', dir === 'back' ? 'back' : dir === 'fade' ? 'fade' : 'fwd');
+    node.addEventListener('animationend', e => { if (e.target === node) node.classList.remove('view-enter', 'back', 'fade', 'fwd'); });
+  }
 }
 
 async function render() {

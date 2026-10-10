@@ -7,6 +7,7 @@ import { CONFIG } from '../config.js';
 import { go, loadAreas, areaName, areaLabel, setBadge } from '../shell.js';
 import { followPanel, referralPanel } from './volunteer.js';
 import { areaMap } from '../areamap.js';
+import { caseBoard } from './cases.js';
 
 const mapOf = (d, areas, title, sub) => areaMap({ areas: d.areas, labelOf: id => areaLabel(areas, id), title, sub });
 const loadDash = (onData, force = false) => cached('dash', () => api.dashboardSummary(), { onData, force, ttl: 60000 });
@@ -142,5 +143,5 @@ function withAreaPicker(build, titleText, sub) {
   loadAreas().then(a => { areas = a; draw(); }).catch(e => root.replaceChildren(errorBox(e.message)));
   return root;
 }
-export const adminFollowView = () => withAreaPicker(id => followPanel({ areaId: id, onOpen: followDetail }), 'งานติดตาม', 'เลือกพื้นที่เพื่อดูงานติดตามของ อสม. ในหมู่นั้น');
-export const adminRefView = () => withAreaPicker(id => referralPanel({ areaId: id, canEdit: true }), 'การส่งต่อ', 'อัปเดตสถานะการส่งต่อและบันทึกผลการประเมิน');
+export const adminFollowView = () => h('div', { class: 'adm-page' }, head('งานติดตาม', 'แยกตามโรค ความดัน (HT) และเบาหวาน (DM) · ทุกพื้นที่'), caseBoard({ kind: 'follow', onOpenFollow: followDetail }));
+export const adminRefView = () => h('div', { class: 'adm-page' }, head('การส่งต่อ', 'แยกตามโรค · กดที่รายการเพื่ออัปเดตสถานะและบันทึกผลการประเมิน'), caseBoard({ kind: 'ref' }));

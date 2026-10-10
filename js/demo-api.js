@@ -130,3 +130,12 @@ api.report = async p => {
 };
 api.reportExportLog = async () => ({ logged: true });
 
+/* โหมดสาธิต: งานติดตาม/ส่งต่อ ทุกพื้นที่ (ข้อมูลสมมติ) */
+api.cases = async () => {
+  const [f, r] = await Promise.all([api.followUps({}), api.referrals({})]), ids = AREAS.map(a => a[0]), day = n => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+  const extraF = Array.from({ length: 14 }, (_, i) => ({ FollowUp_ID: 'DF-' + i, Person_ID: 'DP' + i, Disease: i % 2 ? 'DM' : 'HT', Initial_Status: ['RISK', 'SUSPECTED'][i % 2], Initial_Value: i % 2 ? 'น้ำตาล ' + (110 + i * 6) : (138 + i * 3) + '/' + (86 + i), Open_Date: day(-20), Due_Date: day(i % 5 === 0 ? -4 - i : i * 3 - 2), FollowUp_Status: i % 6 === 5 ? 'COMPLETED' : 'OPEN', Display_Status: i % 6 === 5 ? 'ดำเนินการแล้ว' : i % 5 === 0 ? 'เกินกำหนด' : i % 3 === 0 ? 'ใกล้ครบกำหนด' : 'รอติดตาม', Name: 'ตัวอย่าง คนที่ ' + (i + 1) }));
+  const extraR = Array.from({ length: 6 }, (_, i) => ({ Referral_ID: 'DR-' + i, Person_ID: 'DQ' + i, Disease: i % 3 === 0 ? 'DM' : 'HT', Referral_Date: day(-i - 1), Referral_Status: ['OPEN', 'REFERRED', 'ARRIVED', 'ASSESSED', 'COMPLETED', 'OPEN'][i], Destination: 'รพ.ศรีสาคร', Note: 'ความดันสูงมาก ส่งประเมินด่วน', Name: 'ตัวอย่างส่งต่อ ' + (i + 1) }));
+  const tag = (x, i) => ({ ...x, Area_ID: x.Area_ID || ids[i % ids.length] });
+  return { generatedAt: new Date().toISOString(), followUps: f.followUps.concat(extraF).map(tag), referrals: r.referrals.concat(extraR).map(tag) };
+};
+

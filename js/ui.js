@@ -96,6 +96,7 @@ export function openSheet({ title, body, actions = [], onClose, tall = false }) 
     h('div', { class: 'sheet-body' }, body),
     actions.length ? h('div', { class: 'sheet-actions' }, actions) : null);
   const wrap = h('div', { class: 'sheet-wrap' }, back, panel);
+  [...panel.querySelector('.sheet-body').children].forEach((k, i) => k.style.setProperty('--k', i));   // ให้เนื้อหาเลื่อนขึ้นทีละส่วน
   layer.append(wrap);
   document.body.classList.add('lock');
   requestAnimationFrame(() => wrap.classList.add('in'));
@@ -108,6 +109,12 @@ export function openSheet({ title, body, actions = [], onClose, tall = false }) 
     setTimeout(() => { wrap.remove(); prevFocus?.focus?.(); onClose?.(result); }, reduceMotion() ? 0 : 280);
   }
   const onKey = e => { if (e.key === 'Escape') close(); };
+  // ปัดลงที่แถบจับเพื่อปิด (มือถือ)
+  const grab = panel.querySelector('.grab'); let y0 = null, dy = 0;
+  grab.addEventListener('pointerdown', e => { y0 = e.clientY; dy = 0; panel.style.transition = 'none'; grab.setPointerCapture?.(e.pointerId); });
+  grab.addEventListener('pointermove', e => { if (y0 == null) return; dy = Math.max(0, e.clientY - y0); panel.style.transform = `translateY(${dy}px)`; wrap.style.setProperty('--drag', Math.min(1, dy / 260)); });
+  const release = () => { if (y0 == null) return; y0 = null; panel.style.transition = ''; if (dy > 110) close(); else { panel.style.transform = ''; wrap.style.setProperty('--drag', 0); } };
+  grab.addEventListener('pointerup', release); grab.addEventListener('pointercancel', release);
   document.addEventListener('keydown', onKey);
   back.addEventListener('click', () => close());
   setTimeout(() => (panel.querySelector('input,button.primary,button') || panel).focus?.({ preventScroll: true }), 60);

@@ -5,7 +5,7 @@ export const CONFIG = {
   // true = บังคับโหมดสาธิต (ข้อมูลสมมติ ไม่เชื่อมฐานข้อมูลจริง) ทดสอบได้โดยเปิด ?demo ท้าย URL
   DEMO: false,
   HOSPITAL: 'โรงพยาบาลศรีสาคร',
-  VERSION: '3.4.0',
+  VERSION: '3.5.0',
   TIMEOUT_MS: 20000,
   CACHE_TTL_MS: 60000
 };
